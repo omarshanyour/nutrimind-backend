@@ -14,6 +14,7 @@ function getOpenAIClient() {
 }
 
 export async function POST(req) {
+  console.log("📥 Coach API: Request received");
   try {
     // Parse request body first
     let body;
@@ -92,6 +93,7 @@ ${JSON.stringify(context, null, 2)}
       completion.choices?.[0]?.message?.content?.trim() ||
       "My mind blanked for a second — ask again.";
 
+    console.log("✅ Coach API: OpenAI call successful");
     return NextResponse.json(
       {
         ok: true,
@@ -100,7 +102,7 @@ ${JSON.stringify(context, null, 2)}
       { status: 200 }
     );
   } catch (err) {
-    console.error("🔥 Coach API ERROR:", err);
+    console.error("🔥 Coach API ERROR:", err.message || err);
     
     // Handle specific OpenAI errors
     if (err instanceof Error) {
