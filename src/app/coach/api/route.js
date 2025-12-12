@@ -15,23 +15,24 @@ function getOpenAIClient() {
 
 export async function POST(req) {
   try {
-    // Confirm OpenAI key exists
-    if (!process.env.OPENAI_API_KEY) {
-      console.error("❌ OPENAI_API_KEY missing in .env.local");
+    // Parse request body first
+    let body;
+    try {
+      body = await req.json();
+    } catch (err) {
+      console.error("Coach API: Invalid JSON body", err);
       return NextResponse.json(
         {
           ok: false,
-          message: "Server missing API key. Add it to .env.local.",
+          message: "Invalid request format. Please try again.",
         },
-        { status: 500 }
+        { status: 400 }
       );
     }
 
-    const client = getOpenAIClient();
-
-    const body = await req.json().catch(() => null);
     const { message, baseline, today, history } = body || {};
 
+    // Validate message
     if (!message || typeof message !== "string" || !message.trim()) {
       return NextResponse.json(
         {
@@ -41,6 +42,20 @@ export async function POST(req) {
         { status: 400 }
       );
     }
+
+    // Check API key and initialize client
+    if (!process.env.OPENAI_API_KEY) {
+      console.error("❌ OPENAI_API_KEY missing in environment variables");
+      return NextResponse.json(
+        {
+          ok: false,
+          message: "Server configuration error. Please contact support.",
+        },
+        { status: 500 }
+      );
+    }
+
+    const client = getOpenAIClient();
 
     const context = {
       baseline: baseline || {},
@@ -86,10 +101,34 @@ ${JSON.stringify(context, null, 2)}
     );
   } catch (err) {
     console.error("🔥 Coach API ERROR:", err);
+    
+    // Handle specific OpenAI errors
+    if (err instanceof Error) {
+      if (err.message.includes("API key") || err.message.includes("OPENAI_API_KEY")) {
+        return NextResponse.json(
+          {
+            ok: false,
+            message: "Server configuration error. Please contact support.",
+          },
+          { status: 500 }
+        );
+      }
+      
+      if (err.message.includes("timeout") || err.message.includes("network")) {
+        return NextResponse.json(
+          {
+            ok: false,
+            message: "Request timed out. Please try again.",
+          },
+          { status: 500 }
+        );
+      }
+    }
+    
     return NextResponse.json(
       {
         ok: false,
-        message: "NutriMind crashed for a moment. Try again — I’ll be ready.",
+        message: "NutriMind crashed for a moment. Try again — I'll be ready.",
       },
       { status: 500 }
     );
