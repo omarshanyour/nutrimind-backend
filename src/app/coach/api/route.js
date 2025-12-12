@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -82,8 +82,7 @@ ${JSON.stringify(context, null, 2)}
     return NextResponse.json(
       {
         ok: false,
-        message:
-          "NutriMind crashed for a moment. Try again — I’ll be ready.",
+        message: "NutriMind crashed for a moment. Try again — I’ll be ready.",
       },
       { status: 500 }
     );
