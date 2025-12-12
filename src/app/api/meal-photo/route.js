@@ -6,9 +6,14 @@ import OpenAI from "openai";
 export const runtime = "edge"; // keep edge, it's fine
 
 // 🔐 Read your OpenAI *project* API key from environment, NOT from code
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+function getOpenAIClient() {
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error("OPENAI_API_KEY is not set");
+  }
+  return new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+}
 
 // helper: Uint8Array → base64 for edge runtime (no Buffer)
 function bytesToBase64(bytes) {
@@ -22,6 +27,7 @@ function bytesToBase64(bytes) {
 
 export async function POST(req) {
   try {
+    const client = getOpenAIClient();
     const form = await req.formData();
     const file = form.get("file");
 

@@ -5,10 +5,14 @@ import OpenAI from "openai";
 export const runtime = "edge";
 
 // 🔐 Your real project API key goes here:
-const client = new OpenAI({
-  apiKey:
-    "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",
-});
+function getOpenAIClient() {
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error("OPENAI_API_KEY is not set");
+  }
+  return new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+}
 
 export async function POST(req) {
   try {
@@ -46,8 +50,9 @@ Rules:
 - NO explanations. ONLY raw JSON.
 `;
 
+    const client = getOpenAIClient();
     const completion = await client.chat.completions.create({
-      model: "gpt-4.1-mini",
+      model: "gpt-4o-mini",
       temperature: 0,
       messages: [
         { role: "system", content: systemPrompt },

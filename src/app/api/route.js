@@ -6,9 +6,14 @@ import OpenAI from "openai";
 export const runtime = "edge";
 
 // ---------- OPENAI CLIENT ----------
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+function getOpenAIClient() {
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error("OPENAI_API_KEY is not set");
+  }
+  return new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+}
 
 // Simple in-memory sessions (per browser)
 // NOTE: this resets when you restart the dev server – later you can move this to a DB.
@@ -189,23 +194,17 @@ export async function POST(req) {
       ...history,
     ];
 
-    // --- CALL OPENAI (Responses API, works great with project keys) ---
-    const ai = await client.responses.create({
-      model: "gpt-4.1-mini",
-      input,
-      max_output_tokens: 350,
+    // --- CALL OPENAI ---
+    const client = getOpenAIClient();
+    const ai = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: input,
+      max_tokens: 350,
     });
 
-    let reply = "";
-
-    if (ai.output_text) {
-      reply = ai.output_text;
-    } else if (ai.output && ai.output[0]?.content?.[0]?.text) {
-      reply = ai.output[0].content[0].text;
-    } else {
-      reply =
-        "I understood your question, but I couldn't format my answer correctly. Try asking again a bit differently.";
-    }
+    let reply =
+      ai.choices?.[0]?.message?.content?.trim() ||
+      "I understood your question, but I couldn't format my answer correctly. Try asking again a bit differently.";
 
     // avoid repeating the exact same text back-to-back
     const lastAssistant = [...history].reverse().find(

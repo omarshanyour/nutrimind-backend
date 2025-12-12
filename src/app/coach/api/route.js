@@ -4,9 +4,14 @@ import OpenAI from "openai";
 
 export const runtime = "nodejs";
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+function getOpenAIClient() {
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error("OPENAI_API_KEY is not set");
+  }
+  return new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+}
 
 export async function POST(req) {
   try {
@@ -21,6 +26,8 @@ export async function POST(req) {
         { status: 500 }
       );
     }
+
+    const client = getOpenAIClient();
 
     const body = await req.json().catch(() => null);
     const { message, baseline, today, history } = body || {};
@@ -58,7 +65,7 @@ ${JSON.stringify(context, null, 2)}
 `;
 
     const completion = await client.chat.completions.create({
-      model: "gpt-4.1-mini",
+      model: "gpt-4o-mini",
       temperature: 0.65,
       messages: [
         { role: "system", content: systemPrompt },
