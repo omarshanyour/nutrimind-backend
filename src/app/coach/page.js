@@ -125,28 +125,27 @@ export default function CoachPage() {
     setIsLoading(true);
 
     try {
-      const res = await fetch("/api", {
+      const res = await fetch("/coach/api", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: trimmed + "\n\nKeep the answer concise, with tight bullets or short paragraphs.",
           baseline: baseline || null,
-          last7Days: null, // optional – you can wire your 7-day history here later
+          history: null, // optional – you can wire your 7-day history here later
         }),
       });
 
       const data = await res.json();
 
-      if (!res.ok || data.error) {
+      if (!res.ok || !data.ok) {
         const errorText =
           data?.message ||
           "Coach had a problem answering that. Try again in a second.";
         typeCoachReply(errorText);
       } else {
         const replyText =
-          data.reply ||
           data.message ||
-          "I got your question, but couldn’t format the answer.";
+          "I got your question, but couldn't format the answer.";
         typeCoachReply(replyText);
       }
     } catch (err) {
