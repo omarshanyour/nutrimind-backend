@@ -5,11 +5,12 @@ import OpenAI from "openai";
 export const runtime = "nodejs";
 
 function getOpenAIClient() {
-  if (!process.env.OPENAI_API_KEY) {
+  const key = (process.env.OPENAI_API_KEY || "").trim();
+  if (!key) {
     throw new Error("OPENAI_API_KEY is not set");
   }
   return new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
+    apiKey: key,
   });
 }
 
@@ -45,12 +46,13 @@ export async function POST(req) {
     }
 
     // Check API key and initialize client
-    if (!process.env.OPENAI_API_KEY) {
+    const key = (process.env.OPENAI_API_KEY || "").trim();
+    if (!key) {
       console.error("❌ OPENAI_API_KEY missing in environment variables");
       return NextResponse.json(
         {
           ok: false,
-          message: "Server configuration error. Please contact support.",
+          message: "Server configuration error. Missing API key.",
         },
         { status: 500 }
       );
@@ -102,7 +104,24 @@ ${JSON.stringify(context, null, 2)}
       { status: 200 }
     );
   } catch (err) {
-    console.error("🔥 Coach API ERROR:", err.message || err);
+    // Log error with status and message (no secrets)
+    const errorStatus = err?.status || err?.response?.status;
+    const errorMessage = err?.message || String(err);
+    console.error("🔥 Coach API ERROR:", {
+      status: errorStatus,
+      message: errorMessage,
+    });
+    
+    // Handle OpenAI 401 (Invalid API key)
+    if (errorStatus === 401 || errorMessage?.includes("Incorrect API key") || errorMessage?.includes("401")) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message: "Server configuration error. Invalid API key in production.",
+        },
+        { status: 500 }
+      );
+    }
     
     // Handle specific OpenAI errors
     if (err instanceof Error) {
@@ -110,7 +129,7 @@ ${JSON.stringify(context, null, 2)}
         return NextResponse.json(
           {
             ok: false,
-            message: "Server configuration error. Please contact support.",
+            message: "Server configuration error. Invalid API key in production.",
           },
           { status: 500 }
         );
